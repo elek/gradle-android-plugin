@@ -44,7 +44,12 @@ class ApkBuilderTask_r14 extends AndroidAntTask {
       }
 
       nativefolder(path: androidConvention.nativeLibsDir)
-      project.configurations.runtime.each { jarfile(path: it) }
+      project.configurations.compile.resolvedConfiguration.resolvedArtifacts.findAll { artifact ->
+         if (artifact.extension != 'apklib') {
+            jarfile(path: artifact.file) 
+         }
+      }
+
     }
   }
 }

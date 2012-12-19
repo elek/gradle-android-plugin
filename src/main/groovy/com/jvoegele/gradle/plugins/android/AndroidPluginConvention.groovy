@@ -18,11 +18,14 @@ package com.jvoegele.gradle.plugins.android;
 
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
+import org.gradle.api.artifacts.ResolvedArtifact
+
 
 class AndroidPluginConvention {
   Project project
   File resDir
   File genDir
+  File unpackDir
   File assetsDir
   File nativeLibsDir
   File androidManifest
@@ -38,6 +41,7 @@ class AndroidPluginConvention {
     resDir = new File(project.projectDir, 'res')
     assetsDir = new File(project.projectDir, 'assets')
     nativeLibsDir = new File(project.projectDir, 'libs')
+    unpackDir = new File(project.buildDir, 'unpack')
     androidManifest = new File(project.projectDir, 'AndroidManifest.xml')
     resDirs = project.files(resDir)
 
@@ -88,5 +92,9 @@ class AndroidPluginConvention {
 
   File getUnsignedArchivePath() {
     return new File(project.libsDir, "${apkBaseName}-unsigned.apk")
+  }
+  
+  File getArtifactUnpackDir(ResolvedArtifact artifact) {
+     return new File(unpackDir, artifact.moduleVersion.id.group + "-" + artifact.moduleVersion.id.name + "-" + artifact.moduleVersion.id.version)
   }
 }

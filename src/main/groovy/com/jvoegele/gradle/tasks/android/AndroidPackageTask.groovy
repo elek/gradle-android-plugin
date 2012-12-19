@@ -124,7 +124,11 @@ class AndroidPackageTask extends DefaultTask {
       // enabled, in which case dependencies have already been packaged into
       // the application JAR.
       if (!project.proguard.enabled) {
-        project.configurations.runtime.each { fileset file: it }
+        project.configurations.compile.resolvedConfiguration.resolvedArtifacts.findAll { artifact ->
+           if (artifact.extension != 'apklib') {
+              fileset file: artifact.file
+           }
+        }
       }
     }
 

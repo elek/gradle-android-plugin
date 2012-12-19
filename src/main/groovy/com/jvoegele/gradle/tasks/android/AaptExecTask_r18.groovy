@@ -26,6 +26,22 @@ class AaptExecTask_r18 extends AndroidAntTask {
    */
   @Override
   void execute(Map args) {
+      def apklibs = project.configurations.compile.resolvedConfiguration.resolvedArtifacts.findAll { artifact ->
+         artifact.extension == 'apklib'
+      }
+      def dest;
+      apklibs.each { artifact ->
+         dest = new File(androidConvention.getArtifactUnpackDir(artifact),'res')
+      }
+      if (apklibs.size() > 0) {
+//         ant.properties['project.library.packages'] = 'com.actionbarsherlock'
+         ant.references['project.library.res.folder.path'] = ant.path(location : dest.absolutePath) {
+            apklibs.each { artifact ->
+               pathelement(location: new File(androidConvention.getArtifactUnpackDir(artifact),'res').absolutePath)
+            }
+        
+         }
+      }
 	// <aapt executable="${aapt}"
 	//         command="package"
 	//         versioncode="${version.code}"

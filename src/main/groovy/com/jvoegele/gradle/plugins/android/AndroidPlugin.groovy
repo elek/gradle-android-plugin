@@ -277,6 +277,13 @@ class AndroidPlugin implements Plugin<Project> {
   private void configureCompile() {
     def mainSource = project.tasks.compileJava.source
     project.tasks.compileJava.source = [androidConvention.genDir, mainSource]
+    project.afterEvaluate({
+       project.configurations.compile.resolvedConfiguration.resolvedArtifacts.findAll { artifact -> artifact.extension == 'apklib' }.each { artifact -> 
+          project.tasks.compileJava.source = project.tasks.compileJava.source.plus(
+             project.fileTree(dir: new File(androidConvention.getArtifactUnpackDir(artifact),'src').absolutePath)
+          )
+       }
+    })
     project.sourceSets.main.compileClasspath +=
     project.files(project.ant.references['android.target.classpath'].list())
     project.compileJava.options.bootClasspath = project.ant.references['android.target.classpath']

@@ -20,6 +20,7 @@ package com.jvoegele.gradle.tasks.android;
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.artifacts.ResolvedArtifact 
 
 import com.jvoegele.gradle.plugins.android.AndroidPluginConvention
 import groovy.io.FileType
@@ -42,14 +43,31 @@ class ProcessAndroidResources extends DefaultTask {
     outputs.dir (genDir.absolutePath)
   }
 
-
   @TaskAction
   protected void process() {
     genDir.mkdirs()
 
     generateAIDLFiles()
 
-    project.logger.info("Generating R.java / Manifest.java from the resources...")
+    def apklibs = project.configurations.compile.resolvedConfiguration.resolvedArtifacts.findAll { artifact ->
+       artifact.extension == 'apklib'
+    }
+    
+    for ( artifact in apklibs ) {
+       def dest = androidConvention.getArtifactUnpackDir(artifact)
+       ant.unzip(src: artifact.file, dest: dest.absolutePath)
+       project.tasks.compileJava.source = project.tasks.compileJava.source.plus(project.fileTree(dir: new File(dest,'src').absolutePath))
+       //generate R files for the apk libs
+       generateRFiles('com.actionbarsherlock', apklibs)
+    }
+    //generate R files for the project
+    generateRFiles(null,apklibs);
+    generateBuildConfigFile()
+
+  }
+
+  private void generateRFiles(customPackage, Collection<ResolvedArtifact> apklibs){
+    project.logger.info("Generating R.java / Manifest.java from the resources " + (customPackage == null ? "" : customPackage) + " ...")
     project.ant.exec(executable: ant.aapt, failonerror: "true") {
       arg(value: "package")
       if (verbose) arg(line: "-v")
@@ -62,11 +80,20 @@ class ProcessAndroidResources extends DefaultTask {
         arg(value: "-S")
         arg(path: file.absolutePath)
       }
+      apklibs.each { artifact ->
+        def moduleVersion = artifact.moduleVersion.id
+        def dest = 'build/unpack/' + moduleVersion.group + "-" + artifact.name + "-" + moduleVersion.version + "/res"
+        arg(value: "-S")
+        arg(path: dest)
+      }
       arg(value: "-I")
       arg(path: ant['android.jar'])
+      arg(value: "--auto-add-overlay")
+      if (customPackage != null) {
+         arg(value: "--custom-package")
+         arg(value: customPackage)
+      }
     }
-
-    generateBuildConfigFile()
   }
 
   private void generateAIDLFiles( ) {
